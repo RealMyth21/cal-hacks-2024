@@ -11,7 +11,7 @@ body {
 }
 
 header {
-    background-color: #8a1422;
+    background-color: #8a1465;
     color: white;
     padding: 15px 0;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -61,7 +61,7 @@ main .container {
 .hero {
     text-align: center;
     padding: 60px 0;
-    background-color: #992127;
+    background-color: #992155;
     color: white;
     margin-bottom: 30px;
     border-radius: 8px;
