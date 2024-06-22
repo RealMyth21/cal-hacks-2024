@@ -14,7 +14,16 @@ def about():
     return render_template("about.html")
 
 #app.config['UPLOAD_FOLDER'] = 'path/to/upload_folder' 
-app.config['UPLOAD_FOLDER'] = 'cal-hacks-2024\static\css\audios'
+app.config['UPLOAD_FOLDER'] = 'static\css/audios'
+UPLOAD_FOLDER = 'static\css/audios'
+
+
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+def allowed_file(filename):
+    formats = {'mp3', 'wav', 'webm'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in formats
+
 app.config['DEBUG'] = True
 
 @app.route('/demo', methods=['GET', 'POST'])
@@ -30,7 +39,14 @@ def demo():
             if file.filename == '':
                 print("No selected file")
                 return redirect(request.url)
+            '''
             if file:
+                filename = file.filename
+                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                print(f"File saved: {filename}")
+                return redirect(url_for('demo'))
+            '''
+            if file and allowed_file(file.filename):
                 filename = file.filename
                 file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                 print(f"File saved: {filename}")
