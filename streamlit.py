@@ -5,100 +5,107 @@ import os
 from torch.nn import functional as F
 import torchaudio.transforms as transforms
 from pydub import AudioSegment
+from pydub.utils import which
 
-# Define the CNN model
-class SimpleCNN(torch.nn.Module):
-    def __init__(self, num_classes):
-        super(SimpleCNN, self).__init__()
-        self.conv1 = torch.nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1)
-        self.conv2 = torch.nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1)
-        self.pool = torch.nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
-        self.fc1 = torch.nn.Linear(32 * 10 * (1000 // 4), 128)
-        self.fc2 = torch.nn.Linear(128, num_classes)
-        
-    def forward(self, x):
-        x = F.relu(self.conv1(x))
-        x = self.pool(x)
-        x = F.relu(self.conv2(x))
-        x = self.pool(x)
-        x = x.view(-1, 32 * 10 * (1000 // 4))
-        x = F.relu(self.fc1(x))
-        x = self.fc2(x)
-        return x
+# Check if ffmpeg is installed
+if which("ffmpeg") is None:
+    st.error("ffmpeg is not installed. Please install ffmpeg and try again.")
+else:
+    # Define the CNN model
+    class SimpleCNN(torch.nn.Module):
+        def __init__(self, num_classes):
+            super(SimpleCNN, self).__init__()
+            self.conv1 = torch.nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1)
+            self.conv2 = torch.nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1)
+            self.pool = torch.nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
+            self.fc1 = torch.nn.Linear(32 * 10 * (1000 // 4), 128)
+            self.fc2 = torch.nn.Linear(128, num_classes)
+            
+        def forward(self, x):
+            x = F.relu(self.conv1(x))
+            x = self.pool(x)
+            x = F.relu(self.conv2(x))
+            x = self.pool(x)
+            x = x.view(-1, 32 * 10 * (1000 // 4))
+            x = F.relu(self.fc1(x))
+            x = self.fc2(x)
+            return x
 
-# Load the pre-trained model
-model_path = 'path_to_your_model.pth'
-num_classes = 10
-model = SimpleCNN(num_classes)
+    # Load the pre-trained model
+    model_path = 'simple_cnn_model.pth'
+    num_classes = 10
+    model = SimpleCNN(num_classes)
 
-# Load state_dict while ignoring size mismatch errors
-state_dict = torch.load(model_path)
-state_dict['fc2.weight'] = model.state_dict()['fc2.weight']
-state_dict['fc2.bias'] = model.state_dict()['fc2.bias']
-model.load_state_dict(state_dict, strict=False)
-
-model.eval()
-
-# Define emotion labels
-emotion_labels = ['fear', 'anxiety', 'distress', 'surprise', 'sadness', 'confusion', 'horror', 'surprise', 'pain', 'realization']
-
-# Define transform (MFCC)
-transform = transforms.MFCC()
-
-# Function to predict the emotion of the audio
-def predict_audio(model, audio_path, transform, max_len=1000):
+    # Load state_dict while ignoring size mismatch errors
+    state_dict = torch.load(model_path, map_location=torch.device('cpu'))
+    state_dict['fc2.weight'] = model.state_dict()['fc2.weight']
+    state_dict['fc2.bias'] = model.state_dict()['fc2.bias']
+    model.load_state_dict(state_dict, strict=False)
     model.eval()
-    
-    # Print absolute path for debugging
-    abs_audio_path = os.path.abspath(audio_path)
-    print(f"Absolute path of the audio file: {abs_audio_path}")
-    
-    # List files in the directory for debugging
-    directory = os.path.dirname(abs_audio_path)
-    print(f"Files in directory '{directory}': {os.listdir(directory)}")
-    
-    try:
-        waveform, _ = torchaudio.load(abs_audio_path)
-    except Exception as e:
-        print(f"Error loading audio file {abs_audio_path}: {e}")
-        return None
-    
-    waveform = waveform.mean(dim=0, keepdim=True)  # Convert to mono
 
-    if transform:
-        waveform = transform(waveform)
+    # Define emotion labels
+    emotion_labels = ['fear', 'anxiety', 'distress', 'surprise', 'sadness', 'confusion', 'horror', 'pain', 'realization']
 
-    # Truncate or pad the waveform to the max length
-    if waveform.size(2) > max_len:
-        waveform = waveform[:, :, :max_len]
-    elif waveform.size(2) < max_len:
-        padding = max_len - waveform.size(2)
-        waveform = torch.nn.functional.pad(waveform, (0, padding))
+    # Define transform (MFCC)
+    transform = transforms.MFCC()
 
-    waveform = waveform.unsqueeze(0)  # Add batch dimension
-    waveform = waveform.to(device)
-    
-    with torch.no_grad():
-        output = model(waveform)
-        _, predicted = torch.max(output, 1)
-        predicted_label = dataset.classes[predicted.item()]
-    
-    return predicted_label
+    # Function to predict the emotion of the audio
+    def predict_audio(model, audio_path, transform, max_len=1000):
+        # Convert audio file to WAV format if necessary
+        if audio_path.endswith('.mp3') or audio_path.endswith('.m4a'):
+            try:
+                sound = AudioSegment.from_file(audio_path)
+                audio_path = audio_path.replace('.mp3', '.wav').replace('.m4a', '.wav')
+                sound.export(audio_path, format='wav')
+            except Exception as e:
+                st.error(f"Error converting audio file: {e}")
+                return None
 
+        try:
+            waveform, _ = torchaudio.load(audio_path)
+        except Exception as e:
+            st.error(f"Failed to load audio: {e}")
+            return None
 
-# Streamlit app
-st.title("Audio Emotion Classifier")
+        waveform = waveform.mean(dim=0, keepdim=True)  # Convert to mono
 
-uploaded_file = st.file_uploader("Upload an audio file", type=["wav", "mp3", "m4a"])
+        if transform:
+            waveform = transform(waveform)
 
-if uploaded_file is not None:
-    audio_path = f"temp_audio.{uploaded_file.name.split('.')[-1]}"
-    with open(audio_path, "wb") as f:
-        f.write(uploaded_file.getbuffer())
-    
-    st.audio(uploaded_file, format='audio/wav')
-    
-    predicted_emotion = predict_audio(model, audio_path, transform)
-    st.write(f"The predicted emotion is: {predicted_emotion}")
+        # Truncate or pad the waveform to the max length
+        if waveform.size(2) > max_len:
+            waveform = waveform[:, :, :max_len]
+        elif waveform.size(2) < max_len:
+            padding = max_len - waveform.size(2)
+            waveform = torch.nn.functional.pad(waveform, (0, padding))
 
-    os.remove(audio_path)
+        waveform = waveform.unsqueeze(0)  # Add batch dimension
+
+        with torch.no_grad():
+            output = model(waveform)
+            _, predicted = torch.max(output, 1)
+            predicted_label = emotion_labels[predicted.item()]
+
+        return predicted_label
+
+    # Streamlit app
+    st.title("Audio Emotion Classifier")
+
+    uploaded_file = st.file_uploader("Upload an audio file", type=["wav", "mp3", "m4a"])
+
+    if uploaded_file is not None:
+        audio_path = f"temp_audio.{uploaded_file.name.split('.')[-1]}"
+        with open(audio_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+
+        # Debugging: Check if the file was written
+        if not os.path.exists(audio_path):
+            st.error(f"Failed to save the uploaded file to {audio_path}")
+        else:
+            st.audio(uploaded_file, format='audio/wav')
+
+            predicted_emotion = predict_audio(model, audio_path, transform)
+            if predicted_emotion:
+                st.write(f"The predicted emotion is: {predicted_emotion}")
+
+            os.remove(audio_path)
