@@ -28,22 +28,19 @@
         <div class="container">
             <section class="hero">
                 <h2>Use Our App</h2>
-                <p>Upload an audio file to see our AI model evaluate a 911 call.</p>
+                <p>Upload an audio file for saving audio files on your computer and evaluate its sentiment and/or text script to see its summarized version.</p>
             </section>
 
             <section class="upload">
                 <h3>Upload Audio File</h3>
                 <form action="{{ url_for('demo') }}" method="POST" enctype="multipart/form-data">
                     <input type="file" name="file" accept="audio/*">
-                    <button type="submit">Upload</button>
+                    <button type="submit">Save Audio File</button>
                 </form>
-                {% if emotion %}
-        <div class="result">
-            <h2>Highest Emotion</h2>
-            <p>Emotion: {{ emotion }}</p>
-            <p>Probability: {{ probability }}</p>
-        </div>
-        {% endif %}
+                <p><br></p>
+                <form action="your_audio_sentiment_link_here" method="GET">
+                    <button type="submit">Evaluate Audio Sentiment</button>
+                </form>
             </section>
             <section class="upload">
             <h1>Summarize Text Transcript of 911 Calls</h1>
