@@ -8,6 +8,7 @@
      <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    
 
 
     <header>
@@ -37,6 +38,19 @@
                     <button type="submit">Upload</button>
                 </form>
             </section>
+            <section class="upload">
+            <h1>Summarize Text</h1>
+            <form action="{{ url_for('demo') }}" method="post">
+                <textarea name="text" rows="10" cols="50" placeholder="Enter text to summarize"></textarea>
+                <button type="submit" name="action" value="summarize">Summarize</button>
+            </form>
+    
+            {% if summary %}
+                <h2>Summary</h2>
+                <p>{{ summary }}</p>
+            {% endif %}
+        </section>
+            
         </div>
     </main>
 
