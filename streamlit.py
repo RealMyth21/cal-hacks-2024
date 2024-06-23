@@ -42,7 +42,7 @@ model.load_state_dict(state_dict, strict=False)
 model.eval()
 
 # Define emotion labels
-emotion_labels = ['fear', 'anxiety', 'distress', 'surprise', 'sadness', 'confusion', 'horror', 'pain', 'realization']
+emotion_labels = ['fear', 'anxiety', 'distress', 'surprise', 'sadness', 'confusion', 'horror', 'pain', 'realization', 'joy']
 
 # Define transform (MFCC)
 transform = transforms.MFCC()
