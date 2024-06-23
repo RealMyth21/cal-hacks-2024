@@ -8,6 +8,159 @@ from pydub import AudioSegment
 import librosa
 import scipy
 import numpy as np
+st.markdown("""
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap');
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #5a1111;
+            background-color: #f0f2f5;
+            line-height: 1.6;
+        }
+
+        header {
+            background-color: #8a1465;
+            color: white;
+            padding: 15px 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            margin: 0;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        header nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+        }
+
+        header nav ul li {
+            margin-left: 20px;
+        }
+
+        header nav ul li a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        header nav ul li a:hover {
+            color: #d1c4e9;
+        }
+
+        main .container {
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 60px 0;
+            background-color: #992155;
+            color: white;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .hero h2 {
+            margin: 0 0 20px;
+            font-size: 2.5em;
+        }
+
+        .hero p {
+            font-size: 1.2em;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .features {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .feature {
+            flex: 1;
+            padding: 20px;
+            margin: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            text-align: center;
+            background-color: #ffffff;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .feature:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature h3 {
+            margin-top: 0;
+            font-size: 1.5em;
+            color: #8a1443;
+        }
+
+        .upload {
+            text-align: center;
+            margin: 40px auto;
+            background-color: #e8eaf6;
+            padding: 40px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            max-width: 500px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .upload input[type="file"] {
+            display: block;
+            margin: 20px auto;
+            padding: 10px;
+            font-size: 1em;
+        }
+
+        .upload button {
+            background-color: #8a1447;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1em;
+            transition: background-color 0.3s, transform 0.3s;
+        }
+
+        .upload button:hover {
+            background-color: #931b6d;
+            transform: translateY(-3px);
+        }
+
+        footer {
+            background-color: #8a1465;
+            color: white;
+            text-align: center;
+            padding: 15px 0;
+            margin-top: 40px;
+            box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        footer p {
+            margin: 0;
+        }
+    </style>
+    """, unsafe_allow_html=True)
 
 # Define the CNN model
 class SimpleCNN(torch.nn.Module):
