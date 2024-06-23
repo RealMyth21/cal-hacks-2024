@@ -5,6 +5,9 @@ import os
 from torch.nn import functional as F
 import torchaudio.transforms as transforms
 from pydub import AudioSegment
+import librosa
+import scipy
+import numpy as np
 
 # Define the CNN model
 class SimpleCNN(torch.nn.Module):
@@ -27,42 +30,40 @@ class SimpleCNN(torch.nn.Module):
         return x
 
 # Load the pre-trained model
-model_path = 'path_to_your_model.pth'
+model_path = 'simple_cnn_model.pth'
 num_classes = 10
 model = SimpleCNN(num_classes)
 
 # Load state_dict while ignoring size mismatch errors
-state_dict = torch.load(model_path)
+state_dict = torch.load(model_path, map_location=torch.device('cpu'))
 state_dict['fc2.weight'] = model.state_dict()['fc2.weight']
 state_dict['fc2.bias'] = model.state_dict()['fc2.bias']
 model.load_state_dict(state_dict, strict=False)
-
 model.eval()
 
 # Define emotion labels
-emotion_labels = ['fear', 'anxiety', 'distress', 'surprise', 'sadness', 'confusion', 'horror', 'surprise', 'pain', 'realization']
+emotion_labels = ['fear', 'anxiety', 'distress', 'surprise', 'sadness', 'confusion', 'horror', 'pain', 'realization']
 
 # Define transform (MFCC)
 transform = transforms.MFCC()
 
+# Function to clean up and preprocess the audio
+def clean_audio(audio_path, output_path='outputGun.wav', sr=16000, duration=5):
+    y, sr = librosa.load(audio_path, mono=True, sr=sr, offset=0, duration=duration)
+    scipy.io.wavfile.write(output_path, sr, (y * 32767).astype(np.int16))
+    return output_path
+
 # Function to predict the emotion of the audio
 def predict_audio(model, audio_path, transform, max_len=1000):
-    model.eval()
-    
-    # Print absolute path for debugging
-    abs_audio_path = os.path.abspath(audio_path)
-    print(f"Absolute path of the audio file: {abs_audio_path}")
-    
-    # List files in the directory for debugging
-    directory = os.path.dirname(abs_audio_path)
-    print(f"Files in directory '{directory}': {os.listdir(directory)}")
-    
+    # Convert and clean up audio file
+    cleaned_audio_path = clean_audio(audio_path)
+
     try:
-        waveform, _ = torchaudio.load(abs_audio_path)
+        waveform, _ = torchaudio.load(cleaned_audio_path)
     except Exception as e:
-        print(f"Error loading audio file {abs_audio_path}: {e}")
+        st.error(f"Failed to load audio: {e}")
         return None
-    
+
     waveform = waveform.mean(dim=0, keepdim=True)  # Convert to mono
 
     if transform:
@@ -76,15 +77,13 @@ def predict_audio(model, audio_path, transform, max_len=1000):
         waveform = torch.nn.functional.pad(waveform, (0, padding))
 
     waveform = waveform.unsqueeze(0)  # Add batch dimension
-    waveform = waveform.to(device)
-    
+
     with torch.no_grad():
         output = model(waveform)
         _, predicted = torch.max(output, 1)
-        predicted_label = dataset.classes[predicted.item()]
-    
-    return predicted_label
+        predicted_label = emotion_labels[predicted.item()]
 
+    return predicted_label
 
 # Streamlit app
 st.title("Audio Emotion Classifier")
@@ -95,10 +94,15 @@ if uploaded_file is not None:
     audio_path = f"temp_audio.{uploaded_file.name.split('.')[-1]}"
     with open(audio_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
-    
-    st.audio(uploaded_file, format='audio/wav')
-    
-    predicted_emotion = predict_audio(model, audio_path, transform)
-    st.write(f"The predicted emotion is: {predicted_emotion}")
 
-    os.remove(audio_path)
+    # Debugging: Check if the file was written
+    if not os.path.exists(audio_path):
+        st.error(f"Failed to save the uploaded file to {audio_path}")
+    else:
+        st.audio(uploaded_file, format='audio/wav')
+
+        predicted_emotion = predict_audio(model, audio_path, transform)
+        if predicted_emotion:
+            st.write(f"The predicted emotion is: {predicted_emotion}")
+
+        os.remove(audio_path)
