@@ -3,12 +3,14 @@ import boto3
 import pymysql
 import pymysql.cursors
 import os
+import json
 from botocore.exceptions import ClientError
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static\css/audios'
 UPLOAD_FOLDER = 'static\css/audios'
 app.config['DEBUG'] = True
+model_id = 'anthropic.claude'
 
 # AWS S3 configuration
 S3_BUCKET = 'awsbucketai'
@@ -70,6 +72,47 @@ def demo():
                 if file.filename == '':
                     print("No selected file")
                     return redirect(request.url)
+                if file:
+                    # Upload file to S3
+                    if upload_file_to_s3(file, S3_BUCKET):
+                        filename = file.filename
+                        url = f"https://{S3_BUCKET}.s3.amazonaws.com/{filename}"
+                        # Save file details to database or perform other operations
+                        print(f"File uploaded to S3 and metadata saved: {filename}")
+                        return redirect(url_for('demo'))
+                    else:
+                        return "Error uploading file to S3"
+            elif 'text' in request.form:
+                text = request.form['text']
+                if not text:
+                    return "No text provided", 400
+                try:
+                    response = bedrock_client.invoke_endpoint(
+                        ModelId=model_id,
+                        ContentType='application/json',
+                        Body=json.dumps({'text': text})
+                    )
+                    summary = response['Output']
+                    print(f"Text summarized: {summary}")
+                except Exception as e:
+                    print(f"Error: {e}")
+                    return "An error occurred during the text summarization process.", 500
+        
+        return render_template('demo.html', summary=summary)
+    except Exception as e:
+        print(f"Error: {e}")
+        return "An error occurred during the process."
+    
+'''
+def demo():
+    summary = None
+    try:
+        if request.method == 'POST':
+            if 'file' in request.files:
+                file = request.files['file']
+                if file.filename == '':
+                    print("No selected file")
+                    return redirect(request.url)
                 if file and allowed_file(file.filename):
                     if upload_file_to_s3(file, S3_BUCKET):
                         filename = file.filename
@@ -110,6 +153,6 @@ def demo():
     except Exception as e:
         print(f"Error: {e}")
         return "An error occurred during the process."
-
+'''
 if __name__ == '__main__':
     app.run(debug=True)
