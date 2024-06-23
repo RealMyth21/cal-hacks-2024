@@ -80,10 +80,12 @@ def predict_audio(model, audio_path, transform, max_len=1000):
 
     with torch.no_grad():
         output = model(waveform)
-        _, predicted = torch.max(output, 1)
-        predicted_label = emotion_labels[predicted.item()]
+        probabilities = torch.nn.functional.softmax(output, dim=1)
+        top3_prob, top3_idx = torch.topk(probabilities, 3)
 
-    return predicted_label
+    top3_predictions = [(emotion_labels[idx], prob.item()) for idx, prob in zip(top3_idx[0], top3_prob[0])]
+
+    return top3_predictions
 
 # Streamlit app
 st.title("Audio Emotion Classifier")
@@ -101,8 +103,10 @@ if uploaded_file is not None:
     else:
         st.audio(uploaded_file, format='audio/wav')
 
-        predicted_emotion = predict_audio(model, audio_path, transform)
-        if predicted_emotion:
-            st.write(f"The predicted emotion is: {predicted_emotion}")
+        top3_predictions = predict_audio(model, audio_path, transform)
+        if top3_predictions:
+            st.write("The top 3 predicted emotions are:")
+            for emotion, prob in top3_predictions:
+                st.write(f"{emotion}: {prob:.2f}")
 
         os.remove(audio_path)
