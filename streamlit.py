@@ -80,10 +80,10 @@ def predict_audio(model, audio_path, transform, max_len=1000):
 
     with torch.no_grad():
         output = model(waveform)
-        probabilities = torch.nn.functional.softmax(output, dim=1)
+        probabilities = torch.nn.functional.softmax(output, dim=1)[0]
         top3_prob, top3_idx = torch.topk(probabilities, 3)
 
-    top3_predictions = [(emotion_labels[idx], prob.item()) for idx, prob in zip(top3_idx[0], top3_prob[0])]
+    top3_predictions = [(emotion_labels[idx], prob.item()) for idx, prob in zip(top3_idx, top3_prob)]
 
     return top3_predictions
 
