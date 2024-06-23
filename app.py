@@ -11,9 +11,12 @@ import torch
 import torchaudio
 import numpy as np
 from scipy.io import wavfile
-from model import SimpleCNN, AudioDataset, collate_fn
+#from BerkeleyAIHackathon import predict_audio, format_result, model, transform
+
 
 app = Flask(__name__)
+test_audio_path = '/Users/charlottelaw/outputGun.wav'
+#predicted_label = predict_audio(model, test_audio_path, transform)
 app.config['UPLOAD_FOLDER'] = 'static\css/audios'
 UPLOAD_FOLDER = 'static\css/audios'
 app.config['DEBUG'] = True
@@ -105,7 +108,20 @@ def demo():
                     filename = file.filename
                     file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                     print(f"File saved: {filename}")
-                    return redirect(url_for('demo'))
+
+
+                     # Save the uploaded file to the uploads folder
+                    file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+                    file.save(file_path)
+                    # Perform sentiment analysis on the uploaded audio file
+                    predicted_scores = predict_audio(model, file_path, transform)
+                    if predicted_scores:
+                        # Format the sentiment analysis result
+                        formatted_result = format_result(predicted_scores)
+                        return render_template('index.html', result=formatted_result)
+            
+
+                    #return redirect(url_for('demo'))
             elif 'text' in request.form:
                 text = request.form['text']
                 if text:
