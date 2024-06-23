@@ -1,10 +1,17 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
+
 import boto3
 #import pymysql
 #import pymysql.cursors
 import os
 import json
 from botocore.exceptions import ClientError
+import os
+import torch
+import torchaudio
+import numpy as np
+from scipy.io import wavfile
+from model import SimpleCNN, AudioDataset, collate_fn
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static\css/audios'

@@ -37,6 +37,13 @@
                     <input type="file" name="file" accept="audio/*">
                     <button type="submit">Upload</button>
                 </form>
+                {% if emotion %}
+        <div class="result">
+            <h2>Highest Emotion</h2>
+            <p>Emotion: {{ emotion }}</p>
+            <p>Probability: {{ probability }}</p>
+        </div>
+        {% endif %}
             </section>
             <section class="upload">
             <h1>Summarize Text</h1>
