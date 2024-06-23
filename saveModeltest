@@ -1,0 +1,20 @@
+# Save the trained model
+torch.save(model.state_dict(), 'simple_cnn_model.pth')
+# Training loop
+num_epochs = 5
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.to(device)
+
+for epoch in range(num_epochs):
+    # Training code (unchanged)
+
+# Testing code (unchanged)
+
+# Save the trained model
+torch.save(model.state_dict(), 'simple_cnn_model.pth')
+# Create an instance of the model
+model = SimpleCNN()
+
+# Load the saved model state
+model.load_state_dict(torch.load('simple_cnn_model.pth'))
+model.eval()  # Set model to evaluation mode
