@@ -2,7 +2,6 @@ import streamlit as st
 import torchaudio
 import torch
 import os
-from torch.utils.data import Dataset, DataLoader
 from torch.nn import functional as F
 import torchaudio.transforms as transforms
 
@@ -27,10 +26,16 @@ class SimpleCNN(torch.nn.Module):
         return x
 
 # Load the pre-trained model
-model_path = 'simple_cnn_model.pth'
+model_path = 'path_to_your_model.pth'
 num_classes = 10
 model = SimpleCNN(num_classes)
-model.load_state_dict(torch.load(model_path))
+
+# Load state_dict while ignoring size mismatch errors
+state_dict = torch.load(model_path)
+state_dict['fc2.weight'] = model.state_dict()['fc2.weight']
+state_dict['fc2.bias'] = model.state_dict()['fc2.bias']
+model.load_state_dict(state_dict, strict=False)
+
 model.eval()
 
 # Define emotion labels
