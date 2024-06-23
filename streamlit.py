@@ -26,7 +26,7 @@ class SimpleCNN(torch.nn.Module):
         return x
 
 # Load the pre-trained model
-model_path = 'path_to_your_model.pth'
+model_path = 'simple_cnn_model.pth'
 num_classes = 10
 model = SimpleCNN(num_classes)
 
