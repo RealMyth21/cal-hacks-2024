@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Real-Time Emotion Analysis</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+</head>
+
+<body>
+    <h1>Real-Time Emotion Analysis</h1>
+    <button onclick="startAnalysis()">Start Analysis</button>
+    <button onclick="stopAnalysis()">Stop Analysis</button>
+    <div id="results"></div>
+
+    <script>
+        var socket = io();
+        var audioContext;
+        var mediaRecorder;
+        var audioStream;
+
+        socket.on('connect', function () {
+            console.log('Connected to server');
+        });
+
+        socket.on('status', function (data) {
+            console.log(data);
+        });
+
+        socket.on('error', function (data) {
+            console.error(data);
+        });
+
+        socket.on('emotion_data', function (data) {
+            console.log('Emotion Data:', data);
+            document.getElementById('results').innerHTML += '<p>' + JSON.stringify(data) + '</p>';
+        });
+
+        function startAnalysis() {
+            socket.emit('start_analysis');
+            startRecording();
+        }
+
+        function stopAnalysis() {
+            socket.emit('stop_analysis');
+            stopRecording();
+        }
+
+        function startRecording() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    audioStream = stream;
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.ondataavailable = function (event) {
+                        if (event.data.size > 0) {
+                            var reader = new FileReader();
+                            reader.onloadend = function () {
+                                socket.emit('audio_chunk', reader.result);
+                            };
+                            reader.readAsDataURL(event.data);
+                        }
+                    };
+                    mediaRecorder.start(100);  // Send audio data every 100 milliseconds
+                })
+                .catch(err => {
+                    console.error('Error getting audio stream:', err);
+                });
+        }
+
+        function stopRecording() {
+            mediaRecorder.stop();
+            audioStream.getTracks().forEach(track => track.stop());
+        }
+    </script>
+</body>
+
+</html>
