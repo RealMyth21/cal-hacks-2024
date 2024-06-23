@@ -4,6 +4,7 @@ import torch
 import os
 from torch.nn import functional as F
 import torchaudio.transforms as transforms
+from pydub import AudioSegment
 
 # Define the CNN model
 class SimpleCNN(torch.nn.Module):
@@ -26,7 +27,7 @@ class SimpleCNN(torch.nn.Module):
         return x
 
 # Load the pre-trained model
-model_path = 'simple_cnn_model.pth'
+model_path = 'path_to_your_model.pth'
 num_classes = 10
 model = SimpleCNN(num_classes)
 
@@ -46,7 +47,22 @@ transform = transforms.MFCC()
 
 # Function to predict the emotion of the audio
 def predict_audio(model, audio_path, transform, max_len=1000):
-    waveform, _ = torchaudio.load(audio_path)
+    model.eval()
+    
+    # Print absolute path for debugging
+    abs_audio_path = os.path.abspath(audio_path)
+    print(f"Absolute path of the audio file: {abs_audio_path}")
+    
+    # List files in the directory for debugging
+    directory = os.path.dirname(abs_audio_path)
+    print(f"Files in directory '{directory}': {os.listdir(directory)}")
+    
+    try:
+        waveform, _ = torchaudio.load(abs_audio_path)
+    except Exception as e:
+        print(f"Error loading audio file {abs_audio_path}: {e}")
+        return None
+    
     waveform = waveform.mean(dim=0, keepdim=True)  # Convert to mono
 
     if transform:
@@ -60,13 +76,15 @@ def predict_audio(model, audio_path, transform, max_len=1000):
         waveform = torch.nn.functional.pad(waveform, (0, padding))
 
     waveform = waveform.unsqueeze(0)  # Add batch dimension
+    waveform = waveform.to(device)
     
     with torch.no_grad():
         output = model(waveform)
         _, predicted = torch.max(output, 1)
-        predicted_label = emotion_labels[predicted.item()]
+        predicted_label = dataset.classes[predicted.item()]
     
     return predicted_label
+
 
 # Streamlit app
 st.title("Audio Emotion Classifier")
