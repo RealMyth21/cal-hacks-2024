@@ -4,7 +4,7 @@
 # In[37]:
 
 
-#pip install torch torchaudio numpy
+# pip install torch torchaudio numpy
 
 
 # In[141]:
@@ -15,17 +15,19 @@ from scipy.io.wavfile import write
 from pydub import AudioSegment
 import numpy as np
 import scipy
-from df.enhance import enhance, init_df, load_audio, save_audio
-from df.utils import download_file
 import librosa
 import noisereduce as nr
 from IPython.display import Audio, IFrame, display
 
 
-AudioSegment.from_wav('/Users/charlottelaw/medhaviNew.wav').export(f"medhavi.mp3", format="mp3")
-y,sr = librosa.load('/Users/charlottelaw/medhavi.mp3', mono=True, sr=16000, offset=0, duration=5)
-scipy.io.wavfile.write('outputGun.wav', sr, (y * 32767).astype(np.int16))
-display(Audio(y,rate=sr))
+AudioSegment.from_wav("/Users/charlottelaw/medhaviNew.wav").export(
+    f"medhavi.mp3", format="mp3"
+)
+y, sr = librosa.load(
+    "/Users/charlottelaw/medhavi.mp3", mono=True, sr=16000, offset=0, duration=5
+)
+scipy.io.wavfile.write("outputGun.wav", sr, (y * 32767).astype(np.int16))
+display(Audio(y, rate=sr))
 type(y)
 
 
@@ -35,16 +37,13 @@ from scipy.io import wavfile
 # y2, sr = librosa.load('/Users/medhavijam/Desktop/testGun1.m4a', mono=True, sr=16000, offset=0, duration=50)
 
 # Specify the output WAV file path
-output_file = '/Users/charlottelaw/outputGun.wav'
+output_file = "/Users/charlottelaw/outputGun.wav"
 
 # Convert y2 to 16-bit PCM format (assuming y2 is in the range -1 to 1)
 y2_pcm = (y * 32767).astype(np.int16)
 
 # Write the audio data to a WAV file
 wavfile.write(output_file, sr, y2_pcm)
-
-
-
 
 
 # In[74]:
@@ -58,10 +57,15 @@ from sklearn.model_selection import train_test_split
 import torch.nn as nn
 import torch.optim as optim
 
+
 class AudioDataset(Dataset):
     def __init__(self, dataset_dir, transform=None, max_len=1000):
         self.dataset_dir = dataset_dir
-        self.classes = [d for d in os.listdir(dataset_dir) if os.path.isdir(os.path.join(dataset_dir, d))]
+        self.classes = [
+            d
+            for d in os.listdir(dataset_dir)
+            if os.path.isdir(os.path.join(dataset_dir, d))
+        ]
         self.files = []
         self.max_len = max_len
         self.transform = transform
@@ -85,12 +89,13 @@ class AudioDataset(Dataset):
 
         # Truncate or pad the waveform to the max length
         if waveform.size(2) > self.max_len:
-            waveform = waveform[:, :, :self.max_len]
+            waveform = waveform[:, :, : self.max_len]
         elif waveform.size(2) < self.max_len:
             padding = self.max_len - waveform.size(2)
             waveform = torch.nn.functional.pad(waveform, (0, padding))
 
         return waveform, torch.tensor(self.classes.index(label))
+
 
 def collate_fn(batch):
     waveforms, labels = zip(*batch)
@@ -98,16 +103,18 @@ def collate_fn(batch):
     labels = torch.tensor(labels)
     return waveforms, labels
 
+
 # Define the transform (MFCC)
 transform = torchaudio.transforms.MFCC()
 
 # Load the dataset and split into training and testing sets
-dataset = AudioDataset('dataset/', transform=transform)
+dataset = AudioDataset("dataset/", transform=transform)
 train_set, test_set = train_test_split(dataset, test_size=0.2, random_state=42)
 
 # Create DataLoader instances
 train_loader = DataLoader(train_set, batch_size=32, shuffle=True, collate_fn=collate_fn)
 test_loader = DataLoader(test_set, batch_size=32, shuffle=False, collate_fn=collate_fn)
+
 
 # Define a simple CNN model
 class SimpleCNN(nn.Module):
@@ -115,7 +122,9 @@ class SimpleCNN(nn.Module):
         super(SimpleCNN, self).__init__()
         self.conv1 = nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1)
         self.conv2 = nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1)
-        self.fc1 = nn.Linear(32 * 10 * (dataset.max_len // 4), 128)  # Adjusted dimensions after pooling
+        self.fc1 = nn.Linear(
+            32 * 10 * (dataset.max_len // 4), 128
+        )  # Adjusted dimensions after pooling
         self.fc2 = nn.Linear(128, len(dataset.classes))  # Adjusted number of classes
 
     def forward(self, x):
@@ -127,6 +136,7 @@ class SimpleCNN(nn.Module):
         x = torch.relu(self.fc1(x))
         x = self.fc2(x)
         return x
+
 
 # Create an instance of the model
 model = SimpleCNN()
@@ -181,23 +191,24 @@ import torchaudio
 import torch
 import os
 
+
 def predict_audio(model, audio_path, transform, max_len=1000):
     model.eval()
-    
+
     # Print absolute path for debugging
     abs_audio_path = os.path.abspath(audio_path)
     print(f"Absolute path of the audio file: {abs_audio_path}")
-    
+
     # List files in the directory for debugging
     directory = os.path.dirname(abs_audio_path)
     print(f"Files in directory '{directory}': {os.listdir(directory)}")
-    
+
     try:
         waveform, _ = torchaudio.load(abs_audio_path)
     except Exception as e:
         print(f"Error loading audio file {abs_audio_path}: {e}")
         return None
-    
+
     waveform = waveform.mean(dim=0, keepdim=True)  # Convert to mono
 
     if transform:
@@ -212,19 +223,22 @@ def predict_audio(model, audio_path, transform, max_len=1000):
 
     waveform = waveform.unsqueeze(0)  # Add batch dimension
     waveform = waveform.to(device)
-    
+
     with torch.no_grad():
         output = model(waveform)
         _, predicted = torch.max(output, 1)
         predicted_label = dataset.classes[predicted.item()]
-    
+
     return predicted_label
 
+
 # Test the function
-test_audio_path = '/Users/charlottelaw/outputGun.wav'  # Update this with your actual audio file path
+test_audio_path = (
+    "/Users/charlottelaw/outputGun.wav"  # Update this with your actual audio file path
+)
 predicted_label = predict_audio(model, test_audio_path, transform)
 if predicted_label:
-    print(f'The predicted label for the test audio is: {predicted_label}')
+    print(f"The predicted label for the test audio is: {predicted_label}")
 
 
 # In[147]:
@@ -236,6 +250,7 @@ import json
 from hume import HumeStreamClient
 from hume.models.config import ProsodyConfig
 
+
 async def main():
     client = HumeStreamClient("IawcufxKtWqusn6UgKTvkOhIu7mkMv71VS1KEMmzCF97UKok")
     config = ProsodyConfig()
@@ -246,14 +261,18 @@ async def main():
         with open("output.txt", "w") as outfile:
             outfile.write(formatted_result)
 
+
 def format_result(result):
     formatted_result = ""
     for prediction in result["prosody"]["predictions"]:
-        formatted_result += f"Time: {prediction['time']['begin']} - {prediction['time']['end']}\n"
+        formatted_result += (
+            f"Time: {prediction['time']['begin']} - {prediction['time']['end']}\n"
+        )
         for emotion in prediction["emotions"]:
             formatted_result += f"{emotion['name']}: {emotion['score']}\n"
         formatted_result += "\n"
     return formatted_result
+
 
 # Use asyncio.create_task() instead of asyncio.run()
 asyncio.create_task(main())
@@ -287,7 +306,7 @@ with open("sorted_output.txt", "w") as file:
 # In[149]:
 
 
-with open('sorted_output.txt', 'r') as file:
+with open("sorted_output.txt", "r") as file:
     # Read the first 10 lines
     for _ in range(10):
         # Read a line from the file
