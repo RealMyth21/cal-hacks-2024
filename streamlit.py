@@ -31,7 +31,7 @@ model = SimpleCNN()
 # Load the model state dict
 @st.cache(allow_output_mutation=True)
 def load_model():
-    model.load_state_dict(torch.load('path_to_your_trained_model.pth', map_location=torch.device('cpu')))
+    model.load_state_dict(torch.load('simple_cnn_model.pth', map_location=torch.device('cpu')))
     model.eval()
     return model
 
