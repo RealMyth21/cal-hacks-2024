@@ -31,10 +31,15 @@ model = SimpleCNN()
 # Load the model state dict
 @st.cache(allow_output_mutation=True)
 def load_model():
+    model = SimpleCNN()  # Create an instance of the model
     model.load_state_dict(torch.load('simple_cnn_model.pth', map_location=torch.device('cpu')))
     model.eval()
     return model
 
+# Your Streamlit app
+st.title("Audio Classification")
+
+# Load the model
 model = load_model()
 
 # Audio processing function
