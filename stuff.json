@@ -1,0 +1,17 @@
+{
+    "Comment": "Text Summarization Workflow",
+    "StartAt": "PreprocessText",
+    "States": {
+      "PreprocessText": {
+        "Type": "Task",
+        "Resource": "arn:aws:lambda:your-region:your-account-id:function:PreprocessTextFunction",
+        "Next": "InvokeSummarizationModel"
+      },
+      "InvokeSummarizationModel": {
+        "Type": "Task",
+        "Resource": "arn:aws:lambda:your-region:your-account-id:function:InvokeSummarizationFunction",
+        "End": true
+      }
+    }
+  }
+  

@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 import boto3
-import pymysql
-import pymysql.cursors
+#import pymysql
+#import pymysql.cursors
 import os
 import json
 from botocore.exceptions import ClientError
@@ -17,7 +17,7 @@ S3_BUCKET = 'awsbucketai'
 s3 = boto3.client('s3', region_name='us-east-2a')  # Replace with your AWS region
 
 # AWS Bedrock configuration
-bedrock_client = boto3.client('bedrock', region_name='us-east-2a')  # Replace with your AWS region
+bedrock_client = boto3.client('bedrock-runtime', region_name='us-east-2a')  # Replace with your AWS region
 
 # Database configuration
 DB_HOST = 'database-1.c3m8asiy4pvd.us-east-2.rds.amazonaws.com'
@@ -25,7 +25,29 @@ DB_USER = 'admin'
 DB_PASSWORD = 'berkeley'
 DB_NAME = 'database-1'
 DB_PORT = 3306
+def preprocess_text(event, context):
+    text = event['text']
+    # Implement text preprocessing as needed
+    return {'preprocessed_text': text}
 
+def invoke_summarization_model(event, context):
+    client = boto3.client('bedrock-runtime', region_name='us-east-2a')
+    workflow_id = 'your-bedrock-workflow-id'
+    input_data = {
+        'text': event['preprocessed_text'],
+        'model_id': 'anthropic.claude'  # Replace with the actual model ID if available
+    }
+    
+    # Invoke Bedrock workflow
+    response = client.invoke_workflow(
+        WorkflowId=workflow_id,
+        Input=json.dumps(input_data)
+    )
+    
+    # Process response as needed
+    summary = response['summary']
+    return {'summary': summary}
+'''
 def connect_to_rds():
     try:
         connection = pymysql.connect(
@@ -40,7 +62,7 @@ def connect_to_rds():
     except pymysql.MySQLError as e:
         print(f"Error connecting to RDS: {e}")
         return None
-
+'''
 def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'mp3', 'wav', 'webm'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -63,6 +85,40 @@ def about():
     return render_template("about.html")
 
 @app.route('/demo', methods=['GET', 'POST'])
+def demo():
+    summary = None
+    try:
+        if request.method == 'POST':
+            if 'file' in request.files:
+                file = request.files['file']
+                if file.filename == '':
+                    print("No selected file")
+                    return redirect(request.url)
+                if file and allowed_file(file.filename):
+                    filename = file.filename
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    print(f"File saved: {filename}")
+                    return redirect(url_for('demo'))
+            elif 'text' in request.form:
+                text = request.form['text']
+                if text:
+                    # Invoke the Titan model for text summarization
+                    response = bedrock_client.invoke_model(
+                        modelId='amazon.titan-text-express-v1',  # Use the correct Titan model ID
+                        contentType='application/json',
+                        body=json.dumps({'text': text})
+                       
+                        
+                    )
+                    response_body = json.loads(response['body'].read().decode())
+                    summary = response_body['summary']
+                    print(f"Summary: {summary}")
+        
+        return render_template('demo.html', summary=summary)
+    except Exception as e:
+        print(f"Error: {e}")
+        return "An error occurred during the process."
+'''
 def demo():
     summary = None
     try:
@@ -103,6 +159,7 @@ def demo():
         print(f"Error: {e}")
         return "An error occurred during the process."
     
+'''
 '''
 def demo():
     summary = None
